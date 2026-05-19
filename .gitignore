@@ -26,3 +26,41 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Django ---
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+/static/
+
+# --- Éléments secrets / Configuration ---
+.env
+.secrets
+
+# --- Éditeurs de code (Optionnel mais recommandé) ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# --- OS ---
+.DS_Store
+Thumbs.db
