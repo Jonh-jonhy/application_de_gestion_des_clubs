@@ -37,9 +37,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    #logout: ajoute une table special qui va contenir les token blackliste
+    'rest_framework_simplejwt.token_blacklist',
+    # Packages tiers
+    'rest_framework',           
+    'rest_framework_simplejwt', 
+    'corsheaders',              
+
+    # Nos applications
+    'accounts',                 # Gestion des utilisateurs
+    'clubs',   
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -115,3 +126,52 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+#
+# Configuration du Jeton
+# 
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    # Le token d'accès expire après 1 jour
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    # Le token de rafraîchissement expire après 7 jours
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    # Le token de refresh est renouvelé à chaque utilisation
+    'ROTATE_REFRESH_TOKENS': True,
+    # L'ancien refresh token est blacklisté après rotation
+    'BLACKLIST_AFTER_ROTATION': True,
+    # L'algorithme de signature du token
+    'ALGORITHM': 'HS256',
+    # Le type du token dans le header Authorization
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+
+# 
+# Configuration DRF (Django REST Framework)
+# 
+REST_FRAMEWORK = {
+    # Par défaut, toutes les routes nécessitent une authentification
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+
+# 
+# CORS — Autoriser Angular à communiquer avec Django
+#
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",  # Port par défaut d'Angular
+]
+
+AUTH_USER_MODEL = 'accounts.Utilisateur'
+
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
