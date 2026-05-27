@@ -7,10 +7,10 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
-    # Toutes les routes auth seront préfixées par /api/auth/
     path('api/auth/', include('accounts.urls')),
+
+    # Toutes les routes clubs préfixées par /api/clubs/
+    path('api/clubs/', include('clubs.urls')),
 ]
 
-# Permet de servir les fichiers médias en développement (photos, logos)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
