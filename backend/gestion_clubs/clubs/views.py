@@ -647,3 +647,74 @@ class PublicationsClubView(generics.ListAPIView):
             club_id=club_id,
             statut=Publication.PUBLIEE
         ).select_related('auteur', 'club')
+
+
+# clubs/views.py 
+
+from django.db.models import Count
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : STATISTIQUES GÉNÉRALES
+# GET /api/clubs/statistiques/
+# Réservée à l'administrateur.
+# ──────────────────────────────────────────────────────────────────
+class StatistiquesView(APIView):
+    """
+    Retourne les statistiques globales de la plateforme.
+    Utilisé pour le tableau de bord de l'administrateur.
+    """
+    permission_classes = [EstAdministrateur]
+
+    def get(self, request):
+        # ── Statistiques des clubs ────────────────────────────────
+        total_clubs      = Club.objects.count()
+        clubs_valides    = Club.objects.filter(statut=Club.VALIDE).count()
+        clubs_en_attente = Club.objects.filter(statut=Club.EN_ATTENTE).count()
+        clubs_suspendus  = Club.objects.filter(statut=Club.SUSPENDU).count()
+
+        # ── Statistiques des membres ──────────────────────────────
+        total_utilisateurs = Utilisateur.objects.count()
+        total_membres      = Utilisateur.objects.filter(
+            role=Utilisateur.MEMBRE
+        ).count()
+        total_visiteurs    = Utilisateur.objects.filter(
+            role=Utilisateur.VISITEUR
+        ).count()
+
+        # ── Statistiques des publications ─────────────────────────
+        total_publications      = Publication.objects.count()
+        publications_publiees   = Publication.objects.filter(
+            statut=Publication.PUBLIEE
+        ).count()
+        publications_en_attente = Publication.objects.filter(
+            statut=Publication.EN_ATTENTE
+        ).count()
+
+        # ── Classement des clubs par nombre de membres ────────────
+        classement_clubs = Club.objects.filter(
+            statut=Club.VALIDE
+        ).annotate(
+            nb_membres=Count('adhesions', filter=models.Q(adhesions__est_actif=True))
+        ).order_by('-nb_membres').values(
+            'id', 'nom', 'filiere', 'nb_membres'
+        )[:5]  # Top 5
+
+        return Response({
+            "clubs": {
+                "total":       total_clubs,
+                "valides":     clubs_valides,
+                "en_attente":  clubs_en_attente,
+                "suspendus":   clubs_suspendus,
+            },
+            "utilisateurs": {
+                "total":     total_utilisateurs,
+                "membres":   total_membres,
+                "visiteurs": total_visiteurs,
+            },
+            "publications": {
+                "total":      total_publications,
+                "publiees":   publications_publiees,
+                "en_attente": publications_en_attente,
+            },
+            "top_clubs": list(classement_clubs),
+        }, status=status.HTTP_200_OK)

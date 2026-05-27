@@ -18,6 +18,8 @@ from .views import (
     PublicationsEnAttenteView,
     ValiderPublicationView,
     PublicationsClubView,
+    # ── Statistiques ──────────────────────────────────────────────
+    StatistiquesView
 )
 
 urlpatterns = [
@@ -48,4 +50,7 @@ urlpatterns = [
     path('publications/', ListePublicationsView.as_view(), name='liste_publications'),
     path('publications/en-attente/', PublicationsEnAttenteView.as_view(), name='publications_en_attente'),
     path('publications/<int:pub_pk>/valider/', ValiderPublicationView.as_view(), name='valider_publication'),
+    
+    # ── Statistiques globales ─────────────────────────────────────
+    path('statistiques/', StatistiquesView.as_view(), name='statistiques'),
 ]
