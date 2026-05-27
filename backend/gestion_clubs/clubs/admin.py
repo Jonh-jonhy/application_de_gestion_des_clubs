@@ -83,3 +83,35 @@ class AdhesionAdmin(admin.ModelAdmin):
             return ", ".join([r.get_libelle_display() for r in roles])
         return "Aucun rôle"
     afficher_roles.short_description = "Rôles"
+
+
+# clubs/admin.py 
+
+from .models import Club, RoleClub, Adhesion, Publication  # ← ajoute Publication
+
+@admin.register(Publication)
+class PublicationAdmin(admin.ModelAdmin):
+    list_display  = (
+        'titre', 'club', 'auteur',
+        'statut', 'est_evenement', 'date_creation'
+    )
+    list_filter   = ('statut', 'club')
+    search_fields = ('titre', 'description', 'club__nom')
+    readonly_fields = ('date_creation', 'date_validation', 'valide_par')
+
+    fieldsets = (
+        ('Contenu', {
+            'fields': ('titre', 'description', 'image')
+        }),
+        ('Événement', {
+            'fields': ('date_debut', 'date_fin'),
+            'classes': ('collapse',)
+        }),
+        ('Validation', {
+            'fields': ('statut', 'motif_rejet', 'valide_par', 'date_validation')
+        }),
+        ('Métadonnées', {
+            'fields': ('club', 'auteur', 'date_creation'),
+            'classes': ('collapse',)
+        }),
+    )

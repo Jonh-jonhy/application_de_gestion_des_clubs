@@ -1,37 +1,28 @@
-# accounts/urls.py
+# accounts/urls.py — version complète
 
 from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,   # Login → retourne access + refresh token
-    TokenRefreshView,      # Rafraîchit l'access token avec le refresh token
-)
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     InscriptionView,
     DeconnexionView,
     ProfilView,
     ChangerMotDePasseView,
+    ListeNotificationsView,
+    MarquerNotificationLueView,
+    MarquerToutLuView,
 )
 
 urlpatterns = [
-    # ── Inscription ──────────────────────────────────────────────
-    # Crée un nouveau compte
+    # ── Auth ──────────────────────────────────────────────────────
     path('register/', InscriptionView.as_view(), name='inscription'),
-
-    # ── Connexion ────────────────────────────────────────────────
-    # Fourni par simplejwt : envoie email+password, reçoit les tokens
     path('login/', TokenObtainPairView.as_view(), name='connexion'),
-
-    # ── Refresh token ────────────────────────────────────────────
-    # Obtenir un nouvel access token sans se reconnecter
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    # ── Déconnexion ──────────────────────────────────────────────
     path('logout/', DeconnexionView.as_view(), name='deconnexion'),
-
-    # ── Profil ───────────────────────────────────────────────────
-    # GET → voir son profil / PUT → modifier son profil
     path('me/', ProfilView.as_view(), name='profil'),
-
-    # ── Mot de passe ─────────────────────────────────────────────
     path('changer-password/', ChangerMotDePasseView.as_view(), name='changer_password'),
+
+    # ── Notifications ─────────────────────────────────────────────
+    path('notifications/', ListeNotificationsView.as_view(), name='notifications'),
+    path('notifications/lire-tout/', MarquerToutLuView.as_view(), name='notif_lire_tout'),
+    path('notifications/<int:pk>/lire/', MarquerNotificationLueView.as_view(), name='notif_lire'),
 ]

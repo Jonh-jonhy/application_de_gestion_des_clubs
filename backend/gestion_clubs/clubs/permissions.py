@@ -111,3 +111,40 @@ class EstPresidentOuAdministrateur(BasePermission):
             est_actif=True,
             roles_club__libelle=RoleClub.PRESIDENT
         ).exists()
+
+
+# clubs/permissions.py 
+
+# ──────────────────────────────────────────────────────────────────
+# PERMISSION : PEUT PUBLIER DANS UN CLUB
+# Vérifie que l'utilisateur est président OU secrétaire du club.
+# ──────────────────────────────────────────────────────────────────
+class PeutPublier(BasePermission):
+    """
+    Accès réservé au président et au secrétaire du club.
+    Ces deux rôles ont le droit de créer des publications.
+    """
+    message = "Seuls le président et le secrétaire peuvent publier."
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        # L'admin peut tout faire
+        if request.user.est_administrateur:
+            return True
+
+        club_id = view.kwargs.get('pk')
+        if not club_id:
+            return False
+
+        # Vérifie que l'utilisateur est président OU secrétaire
+        return Adhesion.objects.filter(
+            utilisateur=request.user,
+            club_id=club_id,
+            est_actif=True,
+            roles_club__libelle__in=[
+                RoleClub.PRESIDENT,
+                RoleClub.SECRETAIRE
+            ]
+        ).exists()

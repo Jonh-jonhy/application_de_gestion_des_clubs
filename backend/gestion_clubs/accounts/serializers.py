@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import Utilisateur
+from .models import Utilisateur, Notification
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -124,3 +124,30 @@ class ChangerMotDePasseSerializer(serializers.Serializer):
                 "nouveau_password": "Les deux mots de passe ne correspondent pas."
             })
         return attrs
+
+
+# ──────────────────────────────────────────────────────────────────
+# SERIALIZER NOTIFICATION
+# ──────────────────────────────────────────────────────────────────
+class NotificationSerializer(serializers.ModelSerializer):
+
+    type_display = serializers.CharField(
+        source='get_type_notification_display',
+        read_only=True
+    )
+
+    class Meta:
+        model  = Notification
+        fields = [
+            'id',
+            'type_notification',
+            'type_display',
+            'titre',
+            'message',
+            'est_lue',
+            'date_creation',
+        ]
+        read_only_fields = [
+            'id', 'type_notification',
+            'titre', 'message', 'date_creation'
+        ]

@@ -6,11 +6,12 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Utilisateur
+from .models import Utilisateur, Notification
 from .serializers import (
     InscriptionSerializer,
     UtilisateurProfilSerializer,
-    ChangerMotDePasseSerializer
+    ChangerMotDePasseSerializer,
+    NotificationSerializer
 )
 
 
@@ -146,3 +147,69 @@ class ChangerMotDePasseView(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : LISTE DES NOTIFICATIONS
+# GET /api/auth/notifications/
+# Retourne les notifications de l'utilisateur connecté.
+# ──────────────────────────────────────────────────────────────────
+class ListeNotificationsView(generics.ListAPIView):
+    """
+    Retourne toutes les notifications de l'utilisateur connecté.
+    Les non lues apparaissent en premier.
+    """
+    serializer_class   = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(
+            destinataire=self.request.user
+        ).order_by('est_lue', '-date_creation')
+
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : MARQUER UNE NOTIFICATION COMME LUE
+# PATCH /api/auth/notifications/<pk>/lire/
+# ──────────────────────────────────────────────────────────────────
+class MarquerNotificationLueView(APIView):
+    """
+    Marque une notification spécifique comme lue.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        notification = get_object_or_404(
+            Notification,
+            pk=pk,
+            destinataire=request.user  # Sécurité : on ne peut lire que ses propres notifs
+        )
+        notification.est_lue = True
+        notification.save()
+
+        return Response({
+            "message": "Notification marquée comme lue.",
+            "notification": NotificationSerializer(notification).data
+        }, status=status.HTTP_200_OK)
+
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : MARQUER TOUTES LES NOTIFICATIONS COMME LUES
+# PATCH /api/auth/notifications/lire-tout/
+# ──────────────────────────────────────────────────────────────────
+class MarquerToutLuView(APIView):
+    """
+    Marque toutes les notifications de l'utilisateur comme lues.
+    Utile pour le bouton 'Tout marquer comme lu'.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        count = Notification.objects.filter(
+            destinataire=request.user,
+            est_lue=False
+        ).update(est_lue=True)
+
+        return Response({
+            "message": f"{count} notification(s) marquée(s) comme lues."
+        }, status=status.HTTP_200_OK)

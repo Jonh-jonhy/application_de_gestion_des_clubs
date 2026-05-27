@@ -313,3 +313,127 @@ class Adhesion(models.Model):
     def liste_roles(self):
         """Retourne la liste lisible des rôles du membre."""
         return [r.get_libelle_display() for r in self.roles_club.all()]
+
+
+# clubs/models.py 
+
+# ──────────────────────────────────────────────────────────────────
+# MODÈLE PUBLICATION
+# Représente une publication faite par un club.
+# Seuls le président et le secrétaire peuvent en créer.
+# Chaque publication doit être validée par l'administrateur
+# avant d'être visible publiquement.
+# ──────────────────────────────────────────────────────────────────
+class Publication(models.Model):
+
+    # ── Statuts possibles d'une publication ───────────────────────
+    EN_ATTENTE = 'en_attente'
+    PUBLIEE    = 'publiee'
+    REJETEE    = 'rejetee'
+    ARCHIVEE   = 'archivee'
+
+    STATUT_CHOICES = [
+        (EN_ATTENTE, 'En attente de validation'),
+        (PUBLIEE,    'Publiée'),
+        (REJETEE,    'Rejetée'),
+        (ARCHIVEE,   'Archivée'),
+    ]
+
+    # ── Champs principaux ─────────────────────────────────────────
+    titre = models.CharField(
+        max_length=200,
+        verbose_name="Titre de la publication"
+    )
+    description = models.TextField(
+        verbose_name="Contenu / Description"
+    )
+    image = models.ImageField(
+        upload_to='publications/images/',  # media/publications/images/
+        null=True,
+        blank=True,
+        verbose_name="Image de la publication"
+    )
+
+    # ── Dates (pour les événements) ───────────────────────────────
+    date_debut = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de début de l'événement"
+    )
+    date_fin = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de fin de l'événement"
+    )
+
+    # ── Statut de validation ──────────────────────────────────────
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default=EN_ATTENTE,
+        verbose_name="Statut de la publication"
+    )
+
+    # ── Motif de rejet (rempli par l'admin si rejetée) ────────────
+    motif_rejet = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Motif de rejet",
+        help_text="Rempli par l'administrateur en cas de rejet"
+    )
+
+    # ── Relations ─────────────────────────────────────────────────
+    # Le club auquel appartient cette publication
+    club = models.ForeignKey(
+        Club,
+        on_delete=models.CASCADE,
+        related_name='publications',
+        verbose_name="Club"
+    )
+
+    # L'auteur (président ou secrétaire)
+    auteur = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='publications_creees',
+        verbose_name="Auteur"
+    )
+
+    # L'admin qui a validé ou rejeté
+    valide_par = models.ForeignKey(
+        Utilisateur,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='publications_validees',
+        verbose_name="Validé/Rejeté par"
+    )
+
+    # ── Métadonnées ───────────────────────────────────────────────
+    date_creation = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de création"
+    )
+    date_validation = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de validation"
+    )
+
+    class Meta:
+        verbose_name = "Publication"
+        verbose_name_plural = "Publications"
+        db_table = "publications"
+        ordering = ['-date_creation']  # Les plus récentes en premier
+
+    def __str__(self):
+        return f"{self.titre} — {self.club.nom} ({self.get_statut_display()})"
+
+    @property
+    def est_evenement(self):
+        """
+        Retourne True si la publication est un événement
+        (elle a une date de début et de fin).
+        """
+        return self.date_debut is not None and self.date_fin is not None

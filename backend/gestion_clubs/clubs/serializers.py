@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Club, RoleClub, Adhesion
+from .models import Club, RoleClub, Adhesion, Publication
 from accounts.serializers import UtilisateurProfilSerializer
 
 
@@ -232,3 +232,133 @@ class GestionRolesSerializer(serializers.Serializer):
                 "Un ou plusieurs rôles sont invalides pour ce club."
             )
         return value
+
+# clubs/serializers.py — ajoute à la fin du fichier
+
+# ──────────────────────────────────────────────────────────────────
+# SERIALIZER PUBLICATION — LECTURE
+# Utilisé pour afficher une publication avec tous ses détails.
+# ──────────────────────────────────────────────────────────────────
+class PublicationLectureSerializer(serializers.ModelSerializer):
+
+    # Informations complètes de l'auteur
+    auteur         = UtilisateurProfilSerializer(read_only=True)
+
+    # Informations du club
+    club_nom       = serializers.CharField(source='club.nom', read_only=True)
+
+    # Statut lisible
+    statut_display = serializers.CharField(
+        source='get_statut_display',
+        read_only=True
+    )
+
+    # Indique si c'est un événement (property du modèle)
+    est_evenement  = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model  = Publication
+        fields = [
+            'id',
+            'titre',
+            'description',
+            'image',
+            'date_debut',
+            'date_fin',
+            'est_evenement',
+            'statut',
+            'statut_display',
+            'motif_rejet',
+            'club',
+            'club_nom',
+            'auteur',
+            'date_creation',
+            'date_validation',
+        ]
+
+
+# ──────────────────────────────────────────────────────────────────
+# SERIALIZER PUBLICATION — CRÉATION
+# Utilisé par le président ou le secrétaire pour créer
+# une publication. L'auteur et le club sont automatiques.
+# ──────────────────────────────────────────────────────────────────
+class PublicationCreationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model  = Publication
+        fields = [
+            'id',
+            'titre',
+            'description',
+            'image',
+            'date_debut',
+            'date_fin',
+        ]
+
+    def validate(self, attrs):
+        """
+        Validation métier :
+        Si une date de début est fournie, la date de fin est obligatoire
+        et doit être postérieure à la date de début.
+        """
+        date_debut = attrs.get('date_debut')
+        date_fin   = attrs.get('date_fin')
+
+        if date_debut and not date_fin:
+            raise serializers.ValidationError({
+                "date_fin": "La date de fin est obligatoire si une date de début est fournie."
+            })
+
+        if date_debut and date_fin and date_fin <= date_debut:
+            raise serializers.ValidationError({
+                "date_fin": "La date de fin doit être postérieure à la date de début."
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        """
+        L'auteur est l'utilisateur connecté.
+        Le club est récupéré depuis l'URL via le contexte.
+        Le statut est EN_ATTENTE par défaut.
+        """
+        request = self.context['request']
+        club    = self.context['club']
+
+        return Publication.objects.create(
+            **validated_data,
+            auteur=request.user,
+            club=club
+        )
+
+
+# ──────────────────────────────────────────────────────────────────
+# SERIALIZER VALIDATION DE PUBLICATION
+# Utilisé par l'admin pour valider ou rejeter une publication.
+# En cas de rejet, le motif est obligatoire.
+# ──────────────────────────────────────────────────────────────────
+class ValidationPublicationSerializer(serializers.Serializer):
+
+    ACTIONS = ['publier', 'rejeter']
+
+    action      = serializers.ChoiceField(
+        choices=ACTIONS,
+        help_text="'publier' pour valider, 'rejeter' pour refuser"
+    )
+    motif_rejet = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Obligatoire si action = 'rejeter'"
+    )
+
+    def validate(self, attrs):
+        """
+        Si l'action est 'rejeter', le motif est obligatoire.
+        Cela aide le président à comprendre pourquoi sa publication
+        a été refusée et à la corriger.
+        """
+        if attrs['action'] == 'rejeter' and not attrs.get('motif_rejet'):
+            raise serializers.ValidationError({
+                "motif_rejet": "Le motif est obligatoire en cas de rejet."
+            })
+        return attrs

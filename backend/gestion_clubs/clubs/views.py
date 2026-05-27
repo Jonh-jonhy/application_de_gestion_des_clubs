@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 
 from accounts.models import Utilisateur
 from .models import Club, RoleClub, Adhesion
+from accounts.models import Utilisateur, Notification, creer_notification
 from .serializers import (
     ClubLectureSerializer,
     ClubCreationSerializer,
@@ -64,6 +65,23 @@ class CreerClubView(generics.CreateAPIView):
         if serializer.is_valid():
             club = serializer.save()
 
+            # ── Notification à tous les administrateurs ───────────────
+            # On notifie chaque admin qu'un nouveau club attend validation
+            admins = Utilisateur.objects.filter(
+                role=Utilisateur.ADMINISTRATEUR
+            )
+            for admin in admins:
+                creer_notification(
+                    destinataire=admin,
+                    type_notification=Notification.CLUB_SOUMIS,
+                    titre=f"Nouveau club en attente : {club.nom}",
+                    message=(
+                        f"{request.user.get_full_name()} a soumis une demande "
+                        f"de création du club '{club.nom}' ({club.get_filiere_display()}). "
+                        f"Mission : {club.mission[:100]}..."
+                    )
+                )
+
             return Response({
                 "message": (
                     "Demande de création envoyée. "
@@ -118,6 +136,19 @@ class ValiderClubView(APIView):
         club.date_validation = timezone.now()
         club.valide_par     = request.user
         club.save()
+
+        # ── Notification au créateur ──────────────────────────────────
+        creer_notification(
+            destinataire=club.createur,
+            type_notification=Notification.CLUB_VALIDE,
+            titre=f"Votre club '{club.nom}' a été validé !",
+            message=(
+                f"Félicitations ! Votre club '{club.nom}' a été validé "
+                f"par l'administrateur. Vous êtes automatiquement "
+                f"nommé Président. Vous pouvez maintenant ajouter "
+                f"des membres et créer des publications."
+            )
+        )
 
         # ── 2. Création des rôles par défaut ──────────────────────
         # Chaque club validé reçoit automatiquement ses 4 rôles
@@ -181,6 +212,25 @@ class SuspendreClubView(APIView):
         club = get_object_or_404(Club, pk=pk, statut=Club.VALIDE)
         club.statut = Club.SUSPENDU
         club.save()
+
+        # ── Notification au président du club ─────────────────────────
+        adhesion_president = Adhesion.objects.filter(
+            club=club,
+            est_actif=True,
+            roles_club__libelle=RoleClub.PRESIDENT
+        ).first()
+
+        if adhesion_president:
+            creer_notification(
+                destinataire=adhesion_president.utilisateur,
+                type_notification=Notification.CLUB_SUSPENDU,
+                titre=f"Votre club '{club.nom}' a été suspendu",
+                message=(
+                    f"Le club '{club.nom}' a été suspendu par "
+                    f"l'administrateur. Contactez l'administration "
+                    f"pour plus d'informations."
+                )
+            )
 
         return Response({
             "message": f"Le club '{club.nom}' a été suspendu."
@@ -265,7 +315,16 @@ class AjouterMembreView(APIView):
                 club=club,
                 ajoute_par=request.user
             )
-
+            # Notification au nouveau membre
+            creer_notification(
+                destinataire=utilisateur,
+                type_notification=Notification.MEMBRE_AJOUTE,
+                titre=f"Vous avez été ajouté au club '{club.nom}'",
+                message=(
+                    f"{request.user.get_full_name()} vous a ajouté "
+                    f"au club '{club.nom}'. Bienvenue !"
+                )
+            )            
             # Attribution des rôles si fournis
             roles_ids = serializer.validated_data.get('roles_ids', [])
             if roles_ids:
@@ -365,3 +424,226 @@ class GererRolesMembreView(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# clubs/views.py — ajoute ces imports en haut
+
+from .models import Club, RoleClub, Adhesion, Publication   # ← ajoute Publication
+from .serializers import (
+    # ... tes imports existants ...
+    PublicationLectureSerializer,
+    PublicationCreationSerializer,
+    ValidationPublicationSerializer,
+)
+from .permissions import (
+    # ... tes imports existants ...
+    PeutPublier,
+)
+
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : LISTE DES PUBLICATIONS PUBLIQUES
+# GET /api/publications/
+# Accessible à tous (visiteurs inclus).
+# Retourne uniquement les publications validées.
+# ──────────────────────────────────────────────────────────────────
+class ListePublicationsView(generics.ListAPIView):
+    """
+    Retourne toutes les publications validées, tous clubs confondus.
+    C'est la page d'accueil publique de la plateforme.
+    """
+    serializer_class   = PublicationLectureSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = Publication.objects.filter(
+            statut=Publication.PUBLIEE
+        ).select_related('auteur', 'club')
+
+        # Filtrage optionnel par club via query param
+        # Exemple : /api/publications/?club=1
+        club_id = self.request.query_params.get('club')
+        if club_id:
+            queryset = queryset.filter(club_id=club_id)
+
+        return queryset
+
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : CRÉER UNE PUBLICATION
+# POST /api/clubs/<pk>/publications/creer/
+# Réservée au président et au secrétaire du club.
+# ──────────────────────────────────────────────────────────────────
+class CreerPublicationView(APIView):
+    """
+    Le président ou le secrétaire crée une publication
+    pour son club. Elle est mise EN_ATTENTE jusqu'à
+    validation par l'administrateur.
+    """
+    permission_classes = [PeutPublier]
+
+def post(self, request, pk):
+    club = get_object_or_404(Club, pk=pk, statut=Club.VALIDE)
+
+    serializer = PublicationCreationSerializer(
+        data=request.data,
+        context={'request': request, 'club': club}
+    )
+
+    if serializer.is_valid():
+        publication = serializer.save()
+
+        # ── Notification à tous les administrateurs ───────────────
+        admins = Utilisateur.objects.filter(role=Utilisateur.ADMINISTRATEUR)
+        for admin in admins:
+            creer_notification(
+                destinataire=admin,
+                type_notification=Notification.PUBLICATION_SOUMISE,
+                titre=f"Nouvelle publication en attente : {publication.titre}",
+                message=(
+                    f"{request.user.get_full_name()} du club "
+                    f"'{club.nom}' a soumis une publication "
+                    f"intitulée '{publication.titre}' en attente de validation."
+                )
+            )
+
+        return Response({
+            "message": (
+                "Publication soumise avec succès. "
+                "En attente de validation par l'administrateur."
+            ),
+            "publication": PublicationLectureSerializer(publication).data
+        }, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : LISTE DES PUBLICATIONS EN ATTENTE
+# GET /api/publications/en-attente/
+# Réservée à l'administrateur.
+# ──────────────────────────────────────────────────────────────────
+class PublicationsEnAttenteView(generics.ListAPIView):
+    """
+    L'administrateur consulte toutes les publications
+    en attente de validation.
+    """
+    serializer_class   = PublicationLectureSerializer
+    permission_classes = [EstAdministrateur]
+
+    def get_queryset(self):
+        return Publication.objects.filter(
+            statut=Publication.EN_ATTENTE
+        ).select_related('auteur', 'club')
+
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : VALIDER OU REJETER UNE PUBLICATION
+# POST /api/publications/<pub_pk>/valider/
+# Réservée à l'administrateur.
+# ──────────────────────────────────────────────────────────────────
+class ValiderPublicationView(APIView):
+    """
+    L'administrateur valide ou rejette une publication.
+    - action = 'publier'  → statut devient PUBLIEE
+    - action = 'rejeter'  → statut devient REJETEE + motif obligatoire
+    """
+    permission_classes = [EstAdministrateur]
+
+# clubs/views.py — remplace la méthode post() de ValiderPublicationView
+
+def post(self, request, pub_pk):
+    publication = get_object_or_404(
+        Publication,
+        pk=pub_pk,
+        statut=Publication.EN_ATTENTE
+    )
+
+    serializer = ValidationPublicationSerializer(data=request.data)
+
+    if serializer.is_valid():
+        action = serializer.validated_data['action']
+
+        if action == 'publier':
+            publication.statut          = Publication.PUBLIEE
+            publication.date_validation = timezone.now()
+            publication.valide_par      = request.user
+            publication.motif_rejet     = None
+            publication.save()
+
+            # Notification à l'auteur
+            creer_notification(
+                destinataire=publication.auteur,
+                type_notification=Notification.PUBLICATION_VALIDEE,
+                titre=f"Publication '{publication.titre}' publiée !",
+                message=(
+                    f"Votre publication '{publication.titre}' "
+                    f"pour le club '{publication.club.nom}' "
+                    f"a été validée et est maintenant visible publiquement."
+                )
+            )
+
+            return Response({
+                "message": f"La publication '{publication.titre}' a été publiée.",
+                "publication": PublicationLectureSerializer(publication).data
+            }, status=status.HTTP_200_OK)
+
+        elif action == 'rejeter':
+            publication.statut      = Publication.REJETEE
+            publication.motif_rejet = serializer.validated_data['motif_rejet']
+            publication.valide_par  = request.user
+            publication.save()
+
+            # Notification à l'auteur avec le motif
+            creer_notification(
+                destinataire=publication.auteur,
+                type_notification=Notification.PUBLICATION_REJETEE,
+                titre=f"Publication '{publication.titre}' rejetée",
+                message=(
+                    f"Votre publication '{publication.titre}' "
+                    f"a été rejetée. Motif : {publication.motif_rejet}"
+                )
+            )
+
+            return Response({
+                "message": f"La publication '{publication.titre}' a été rejetée.",
+                "publication": PublicationLectureSerializer(publication).data
+            }, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# ──────────────────────────────────────────────────────────────────
+# VUE : PUBLICATIONS D'UN CLUB SPÉCIFIQUE
+# GET /api/clubs/<pk>/publications/
+# Membres du club : voient toutes les publications (même en attente)
+# Visiteurs : voient uniquement les publications publiées
+# ──────────────────────────────────────────────────────────────────
+class PublicationsClubView(generics.ListAPIView):
+    """
+    Retourne les publications d'un club spécifique.
+    Le filtre dépend du profil de l'utilisateur connecté.
+    """
+    serializer_class   = PublicationLectureSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        club_id = self.kwargs.get('pk')
+        user    = self.request.user
+
+        # Les membres du club et l'admin voient tout
+        if user.is_authenticated:
+            est_membre = Adhesion.objects.filter(
+                utilisateur=user,
+                club_id=club_id,
+                est_actif=True
+            ).exists()
+
+            if est_membre or user.est_administrateur:
+                return Publication.objects.filter(
+                    club_id=club_id
+                ).select_related('auteur', 'club')
+
+        # Les visiteurs ne voient que les publications publiées
+        return Publication.objects.filter(
+            club_id=club_id,
+            statut=Publication.PUBLIEE
+        ).select_related('auteur', 'club')
