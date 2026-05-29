@@ -2,12 +2,11 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm",
-    "analytics": false
+    "packageManager": "npm"
   },
   "newProjectRoot": "projects",
   "projects": {
-    "gestion_clubs_front": {
+    "gestion_clubs_frontend": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -57,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "gestion_clubs_front:build:production"
+              "buildTarget": "gestion_clubs_frontend:build:production"
             },
             "development": {
-              "buildTarget": "gestion_clubs_front:build:development"
+              "buildTarget": "gestion_clubs_frontend:build:development"
             }
           },
           "defaultConfiguration": "development"
