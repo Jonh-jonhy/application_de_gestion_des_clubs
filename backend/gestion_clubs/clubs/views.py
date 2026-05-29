@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.db import models as django_models
+
 
 from accounts.models import Utilisateur
 from .models import Club, RoleClub, Adhesion
@@ -442,6 +444,34 @@ from .permissions import (
 
 
 # ──────────────────────────────────────────────────────────────────
+# VUE : LISTE DES RÔLES D'UN CLUB
+# GET /api/clubs/<pk>/roles/
+# Permet au président de voir les rôles disponibles
+# avant d'ajouter un membre afin de connaître les IDs exacts.
+# ──────────────────────────────────────────────────────────────────
+class ListeRolesClubView(generics.ListAPIView):
+    """
+    Retourne tous les rôles disponibles dans un club.
+    Le président consulte cette liste pour connaître
+    les IDs à utiliser lors de l'ajout d'un membre.
+
+    Exemple de réponse :
+    [
+        {"id": 1, "libelle": "president", "libelle_display": "Président"},
+        {"id": 2, "libelle": "secretaire", "libelle_display": "Secrétaire"},
+        {"id": 3, "libelle": "tresorier", "libelle_display": "Trésorier"},
+        {"id": 4, "libelle": "membre", "libelle_display": "Membre"}
+    ]
+    """
+    serializer_class   = RoleClubSerializer
+    permission_classes = [EstPresidentOuAdministrateur]
+
+    def get_queryset(self):
+        club_id = self.kwargs.get('pk')
+        return RoleClub.objects.filter(club_id=club_id)
+
+
+# ──────────────────────────────────────────────────────────────────
 # VUE : LISTE DES PUBLICATIONS PUBLIQUES
 # GET /api/publications/
 # Accessible à tous (visiteurs inclus).
@@ -474,49 +504,54 @@ class ListePublicationsView(generics.ListAPIView):
 # POST /api/clubs/<pk>/publications/creer/
 # Réservée au président et au secrétaire du club.
 # ──────────────────────────────────────────────────────────────────
+
+
 class CreerPublicationView(APIView):
     """
     Le président ou le secrétaire crée une publication
     pour son club. Elle est mise EN_ATTENTE jusqu'à
     validation par l'administrateur.
+
+    Méthode : POST
+    URL : /api/clubs/<pk>/publications/creer/
+    Permission : PeutPublier (président ou secrétaire)
     """
     permission_classes = [PeutPublier]
 
-def post(self, request, pk):
-    club = get_object_or_404(Club, pk=pk, statut=Club.VALIDE)
+    def post(self, request, pk):
+        club = get_object_or_404(Club, pk=pk, statut=Club.VALIDE)
 
-    serializer = PublicationCreationSerializer(
-        data=request.data,
-        context={'request': request, 'club': club}
-    )
+        serializer = PublicationCreationSerializer(
+            data=request.data,
+            context={'request': request, 'club': club}
+        )
 
-    if serializer.is_valid():
-        publication = serializer.save()
+        if serializer.is_valid():
+            publication = serializer.save()
 
-        # ── Notification à tous les administrateurs ───────────────
-        admins = Utilisateur.objects.filter(role=Utilisateur.ADMINISTRATEUR)
-        for admin in admins:
-            creer_notification(
-                destinataire=admin,
-                type_notification=Notification.PUBLICATION_SOUMISE,
-                titre=f"Nouvelle publication en attente : {publication.titre}",
-                message=(
-                    f"{request.user.get_full_name()} du club "
-                    f"'{club.nom}' a soumis une publication "
-                    f"intitulée '{publication.titre}' en attente de validation."
+            # ── Notification à tous les administrateurs ───────────
+            admins = Utilisateur.objects.filter(role=Utilisateur.ADMINISTRATEUR)
+            for admin in admins:
+                creer_notification(
+                    destinataire=admin,
+                    type_notification=Notification.PUBLICATION_SOUMISE,
+                    titre=f"Nouvelle publication en attente : {publication.titre}",
+                    message=(
+                        f"{request.user.get_full_name()} du club "
+                        f"'{club.nom}' a soumis une publication "
+                        f"intitulée '{publication.titre}' en attente de validation."
+                    )
                 )
-            )
 
-        return Response({
-            "message": (
-                "Publication soumise avec succès. "
-                "En attente de validation par l'administrateur."
-            ),
-            "publication": PublicationLectureSerializer(publication).data
-        }, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": (
+                    "Publication soumise avec succès. "
+                    "En attente de validation par l'administrateur."
+                ),
+                "publication": PublicationLectureSerializer(publication).data
+            }, status=status.HTTP_201_CREATED)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # ──────────────────────────────────────────────────────────────────
 # VUE : LISTE DES PUBLICATIONS EN ATTENTE
 # GET /api/publications/en-attente/
@@ -541,76 +576,81 @@ class PublicationsEnAttenteView(generics.ListAPIView):
 # POST /api/publications/<pub_pk>/valider/
 # Réservée à l'administrateur.
 # ──────────────────────────────────────────────────────────────────
+# clubs/views.py 
+
 class ValiderPublicationView(APIView):
     """
     L'administrateur valide ou rejette une publication.
-    - action = 'publier'  → statut devient PUBLIEE
-    - action = 'rejeter'  → statut devient REJETEE + motif obligatoire
+
+    Méthode : POST
+    URL : /api/clubs/publications/<pub_pk>/valider/
+    Permission : EstAdministrateur uniquement
+
+    Body attendu :
+        { "action": "publier" }
+        { "action": "rejeter", "motif_rejet": "..." }
     """
     permission_classes = [EstAdministrateur]
 
-# clubs/views.py — remplace la méthode post() de ValiderPublicationView
+    def post(self, request, pub_pk):
+        publication = get_object_or_404(
+            Publication,
+            pk=pub_pk,
+            statut=Publication.EN_ATTENTE
+        )
 
-def post(self, request, pub_pk):
-    publication = get_object_or_404(
-        Publication,
-        pk=pub_pk,
-        statut=Publication.EN_ATTENTE
-    )
+        serializer = ValidationPublicationSerializer(data=request.data)
 
-    serializer = ValidationPublicationSerializer(data=request.data)
+        if serializer.is_valid():
+            action = serializer.validated_data['action']
 
-    if serializer.is_valid():
-        action = serializer.validated_data['action']
+            if action == 'publier':
+                publication.statut          = Publication.PUBLIEE
+                publication.date_validation = timezone.now()
+                publication.valide_par      = request.user
+                publication.motif_rejet     = None
+                publication.save()
 
-        if action == 'publier':
-            publication.statut          = Publication.PUBLIEE
-            publication.date_validation = timezone.now()
-            publication.valide_par      = request.user
-            publication.motif_rejet     = None
-            publication.save()
-
-            # Notification à l'auteur
-            creer_notification(
-                destinataire=publication.auteur,
-                type_notification=Notification.PUBLICATION_VALIDEE,
-                titre=f"Publication '{publication.titre}' publiée !",
-                message=(
-                    f"Votre publication '{publication.titre}' "
-                    f"pour le club '{publication.club.nom}' "
-                    f"a été validée et est maintenant visible publiquement."
+                # Notification à l'auteur
+                creer_notification(
+                    destinataire=publication.auteur,
+                    type_notification=Notification.PUBLICATION_VALIDEE,
+                    titre=f"Publication '{publication.titre}' publiée !",
+                    message=(
+                        f"Votre publication '{publication.titre}' "
+                        f"pour le club '{publication.club.nom}' "
+                        f"a été validée et est maintenant visible publiquement."
+                    )
                 )
-            )
 
-            return Response({
-                "message": f"La publication '{publication.titre}' a été publiée.",
-                "publication": PublicationLectureSerializer(publication).data
-            }, status=status.HTTP_200_OK)
+                return Response({
+                    "message": f"La publication '{publication.titre}' a été publiée.",
+                    "publication": PublicationLectureSerializer(publication).data
+                }, status=status.HTTP_200_OK)
 
-        elif action == 'rejeter':
-            publication.statut      = Publication.REJETEE
-            publication.motif_rejet = serializer.validated_data['motif_rejet']
-            publication.valide_par  = request.user
-            publication.save()
+            elif action == 'rejeter':
+                publication.statut      = Publication.REJETEE
+                publication.motif_rejet = serializer.validated_data['motif_rejet']
+                publication.valide_par  = request.user
+                publication.save()
 
-            # Notification à l'auteur avec le motif
-            creer_notification(
-                destinataire=publication.auteur,
-                type_notification=Notification.PUBLICATION_REJETEE,
-                titre=f"Publication '{publication.titre}' rejetée",
-                message=(
-                    f"Votre publication '{publication.titre}' "
-                    f"a été rejetée. Motif : {publication.motif_rejet}"
+                # Notification à l'auteur avec le motif
+                creer_notification(
+                    destinataire=publication.auteur,
+                    type_notification=Notification.PUBLICATION_REJETEE,
+                    titre=f"Publication '{publication.titre}' rejetée",
+                    message=(
+                        f"Votre publication '{publication.titre}' "
+                        f"a été rejetée. Motif : {publication.motif_rejet}"
+                    )
                 )
-            )
 
-            return Response({
-                "message": f"La publication '{publication.titre}' a été rejetée.",
-                "publication": PublicationLectureSerializer(publication).data
-            }, status=status.HTTP_200_OK)
+                return Response({
+                    "message": f"La publication '{publication.titre}' a été rejetée.",
+                    "publication": PublicationLectureSerializer(publication).data
+                }, status=status.HTTP_200_OK)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # ──────────────────────────────────────────────────────────────────
 # VUE : PUBLICATIONS D'UN CLUB SPÉCIFIQUE
 # GET /api/clubs/<pk>/publications/
@@ -662,6 +702,10 @@ class StatistiquesView(APIView):
     """
     Retourne les statistiques globales de la plateforme.
     Utilisé pour le tableau de bord de l'administrateur.
+
+    Méthode : GET
+    URL : /api/clubs/statistiques/
+    Permission : EstAdministrateur uniquement
     """
     permission_classes = [EstAdministrateur]
 
@@ -672,7 +716,7 @@ class StatistiquesView(APIView):
         clubs_en_attente = Club.objects.filter(statut=Club.EN_ATTENTE).count()
         clubs_suspendus  = Club.objects.filter(statut=Club.SUSPENDU).count()
 
-        # ── Statistiques des membres ──────────────────────────────
+        # ── Statistiques des utilisateurs ─────────────────────────
         total_utilisateurs = Utilisateur.objects.count()
         total_membres      = Utilisateur.objects.filter(
             role=Utilisateur.MEMBRE
@@ -690,21 +734,25 @@ class StatistiquesView(APIView):
             statut=Publication.EN_ATTENTE
         ).count()
 
-        # ── Classement des clubs par nombre de membres ────────────
+        # ── Top 5 clubs par nombre de membres actifs ──────────────
+        # On utilise django_models.Q pour filtrer dans l'annotation
         classement_clubs = Club.objects.filter(
             statut=Club.VALIDE
         ).annotate(
-            nb_membres=Count('adhesions', filter=models.Q(adhesions__est_actif=True))
+            nb_membres=Count(
+                'adhesions',
+                filter=django_models.Q(adhesions__est_actif=True)
+            )
         ).order_by('-nb_membres').values(
             'id', 'nom', 'filiere', 'nb_membres'
-        )[:5]  # Top 5
+        )[:5]
 
         return Response({
             "clubs": {
-                "total":       total_clubs,
-                "valides":     clubs_valides,
-                "en_attente":  clubs_en_attente,
-                "suspendus":   clubs_suspendus,
+                "total":      total_clubs,
+                "valides":    clubs_valides,
+                "en_attente": clubs_en_attente,
+                "suspendus":  clubs_suspendus,
             },
             "utilisateurs": {
                 "total":     total_utilisateurs,
