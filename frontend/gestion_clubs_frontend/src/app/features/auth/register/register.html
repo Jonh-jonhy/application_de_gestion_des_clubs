@@ -1,1 +1,408 @@
-<p>register works!</p>
+<!-- src/app/features/auth/register/register.html -->
+
+<div class="min-h-screen flex flex-col bg-gray-50">
+
+  <!-- ══════════════════════════════════════════════
+       NAVBAR — identique à login
+       ══════════════════════════════════════════════ -->
+  <app-header-public />
+  <!-- ══════════════════════════════════════════════
+       CONTENU PRINCIPAL
+       ══════════════════════════════════════════════ -->
+  <main class="flex-1 flex flex-col items-center
+               justify-center px-4 py-16">
+
+    <!-- Card formulaire -->
+    <div class="w-full max-w-lg bg-white rounded-2xl
+                border border-gray-200 shadow-sm p-8">
+
+      <!-- Icône centré -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 bg-purple-50 rounded-full
+                    flex items-center justify-center">
+          <svg class="w-8 h-8 text-primary-700" fill="none"
+               stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0
+                     11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Titre -->
+      <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">
+          Créer un compte
+        </h1>
+        <p class="text-sm text-gray-500">
+          Rejoignez la plateforme officielle des clubs
+          de l'Institut Saint Jean.
+        </p>
+      </div>
+
+      <!-- Message d'erreur global -->
+      @if (erreur()) {
+        <div class="flex items-center gap-2 bg-red-50 border
+                    border-red-200 rounded-xl px-4 py-3 mb-6">
+          <svg class="w-4 h-4 text-red-500 shrink-0"
+               fill="none" stroke="currentColor"
+               viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4m0 4h.01"/>
+          </svg>
+          <p class="text-sm text-red-600">{{ erreur() }}</p>
+        </div>
+      }
+
+      <!-- Formulaire -->
+      <form [formGroup]="formulaire" (ngSubmit)="onSubmit()"
+            class="space-y-5">
+
+        <!-- Ligne Prénom + Nom -->
+        <div class="grid grid-cols-2 gap-4">
+
+          <!-- Prénom -->
+          <div>
+            <label class="block text-sm font-medium
+                          text-gray-700 mb-1.5">
+              Prénom
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3
+                          flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12
+                           14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <input
+                type="text"
+                formControlName="prenom"
+                placeholder="Jean"
+                class="w-full pl-10 pr-4 py-3 border rounded-xl
+                       text-sm text-gray-900 placeholder-gray-400
+                       focus:outline-none focus:ring-2
+                       focus:ring-primary-700 focus:border-transparent
+                       transition-all duration-200"
+                [class.border-red-300]="prenom?.invalid && prenom?.touched"
+                [class.border-gray-200]="!(prenom?.invalid && prenom?.touched)"
+              />
+            </div>
+            @if (prenom?.invalid && prenom?.touched) {
+              <p class="text-xs text-red-500 mt-1">
+                Prénom obligatoire (min. 2 caractères).
+              </p>
+            }
+          </div>
+
+          <!-- Nom -->
+          <div>
+            <label class="block text-sm font-medium
+                          text-gray-700 mb-1.5">
+              Nom
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3
+                          flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-gray-400" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12
+                           14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <input
+                type="text"
+                formControlName="nom"
+                placeholder="Dupont"
+                class="w-full pl-10 pr-4 py-3 border rounded-xl
+                       text-sm text-gray-900 placeholder-gray-400
+                       focus:outline-none focus:ring-2
+                       focus:ring-primary-700 focus:border-transparent
+                       transition-all duration-200"
+                [class.border-red-300]="nom?.invalid && nom?.touched"
+                [class.border-gray-200]="!(nom?.invalid && nom?.touched)"
+              />
+            </div>
+            @if (nom?.invalid && nom?.touched) {
+              <p class="text-xs text-red-500 mt-1">
+                Nom obligatoire (min. 2 caractères).
+              </p>
+            }
+          </div>
+
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label class="block text-sm font-medium
+                        text-gray-700 mb-1.5">
+            Adresse Email
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3
+                        flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-gray-400" fill="none"
+                   stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5
+                         20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2
+                         2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="j.dupont@isj-yde.com"
+              class="w-full pl-10 pr-4 py-3 border rounded-xl
+                     text-sm text-gray-900 placeholder-gray-400
+                     focus:outline-none focus:ring-2
+                     focus:ring-primary-700 focus:border-transparent
+                     transition-all duration-200"
+              [class.border-red-300]="email?.invalid && email?.touched"
+              [class.border-gray-200]="!(email?.invalid && email?.touched)"
+            />
+          </div>
+          @if (email?.invalid && email?.touched) {
+            <p class="text-xs text-red-500 mt-1">
+              @if (email?.errors?.['required']) {
+                L'email est obligatoire.
+              } @else {
+                Format d'email invalide.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- Mot de passe -->
+        <div>
+          <label class="block text-sm font-medium
+                        text-gray-700 mb-1.5">
+            Mot de passe
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3
+                        flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-gray-400" fill="none"
+                   stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2
+                         0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002
+                         2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+            <input
+              [type]="mdpVisible() ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••"
+              class="w-full pl-10 pr-12 py-3 border rounded-xl
+                     text-sm text-gray-900 placeholder-gray-400
+                     focus:outline-none focus:ring-2
+                     focus:ring-primary-700 focus:border-transparent
+                     transition-all duration-200"
+              [class.border-red-300]="password?.invalid && password?.touched"
+              [class.border-gray-200]="!(password?.invalid && password?.touched)"
+            />
+            <button type="button" (click)="toggleMdp()"
+                    class="absolute inset-y-0 right-0 pr-3
+                           flex items-center text-gray-400
+                           hover:text-gray-600 transition-colors">
+              @if (mdpVisible()) {
+                <svg class="w-4 h-4" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478
+                           0-8.268-2.943-9.543-7a9.97 9.97 0 011.563
+                           -3.029m5.858.908a3 3 0 114.243 4.243M9.878
+                           9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532
+                           7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953
+                           9.953 0 0112 5c4.478 0 8.268 2.943 9.543
+                           7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478
+                           0 8.268 2.943 9.542 7-1.274 4.057-5.064
+                           7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (password?.invalid && password?.touched) {
+            <p class="text-xs text-red-500 mt-1">
+              Minimum 8 caractères requis.
+            </p>
+          }
+        </div>
+
+        <!-- Confirmer mot de passe -->
+        <div>
+          <label class="block text-sm font-medium
+                        text-gray-700 mb-1.5">
+            Confirmer le mot de passe
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3
+                        flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-gray-400" fill="none"
+                   stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2
+                         0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002
+                         2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+            </div>
+            <input
+              [type]="mdpConfVisible() ? 'text' : 'password'"
+              formControlName="password2"
+              placeholder="••••••••"
+              class="w-full pl-10 pr-12 py-3 border rounded-xl
+                     text-sm text-gray-900 placeholder-gray-400
+                     focus:outline-none focus:ring-2
+                     focus:ring-primary-700 focus:border-transparent
+                     transition-all duration-200"
+              [class.border-red-300]="
+                (password2?.touched && formulaire.errors?.['motsDePasse'])"
+              [class.border-gray-200]="
+                !(password2?.touched && formulaire.errors?.['motsDePasse'])"
+            />
+            <button type="button" (click)="toggleMdpConf()"
+                    class="absolute inset-y-0 right-0 pr-3
+                           flex items-center text-gray-400
+                           hover:text-gray-600 transition-colors">
+              @if (mdpConfVisible()) {
+                <svg class="w-4 h-4" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478
+                           0-8.268-2.943-9.543-7a9.97 9.97 0 011.563
+                           -3.029m5.858.908a3 3 0 114.243 4.243M9.878
+                           9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532
+                           7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953
+                           9.953 0 0112 5c4.478 0 8.268 2.943 9.543
+                           7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478
+                           0 8.268 2.943 9.542 7-1.274 4.057-5.064
+                           7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              }
+            </button>
+          </div>
+          <!-- Erreur mots de passe différents -->
+          @if (password2?.touched && formulaire.errors?.['motsDePasse']) {
+            <p class="text-xs text-red-500 mt-1">
+              Les mots de passe ne correspondent pas.
+            </p>
+          }
+        </div>
+
+        <!-- Encart information importante -->
+        <div class="flex items-start gap-3 bg-purple-50 border
+                    border-purple-200 rounded-xl px-4 py-3">
+          <svg class="w-5 h-5 text-primary-700 shrink-0 mt-0.5"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  stroke-width="2" d="M12 16v-4m0-4h.01"/>
+          </svg>
+          <div>
+            <p class="text-sm font-semibold text-primary-700 mb-1">
+              Information importante
+            </p>
+            <p class="text-sm text-primary-700 leading-relaxed">
+              Par défaut, votre compte sera créé avec le rôle
+              'Visiteur'. Vous pourrez rejoindre des clubs ou
+              demander la création d'un club après validation.
+            </p>
+          </div>
+        </div>
+
+        <!-- Bouton Créer mon compte -->
+        <button
+          type="submit"
+          [disabled]="chargement()"
+          class="w-full bg-primary-700 hover:bg-primary-800
+                 disabled:bg-primary-400 text-white font-semibold
+                 py-3 rounded-xl transition-colors duration-200
+                 flex items-center justify-center gap-2 mt-2">
+          @if (chargement()) {
+            <svg class="w-4 h-4 animate-spin" fill="none"
+                 viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0
+                       12h4zm2 5.291A7.962 7.962 0 014 12H0c0
+                       3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            </svg>
+            Création en cours...
+          } @else {
+            Créer mon compte
+          }
+        </button>
+
+      </form>
+
+      <!-- Lien connexion -->
+      <div class="text-center mt-6">
+        <p class="text-sm text-gray-500">
+          Déjà un compte ?
+          <a routerLink="/login"
+             class="text-primary-700 font-semibold
+                    hover:text-primary-800 transition-colors">
+            Se connecter
+          </a>
+          <span class="text-primary-700 ml-1">›</span>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Mentions légales -->
+    <p class="text-xs text-gray-400 text-center mt-6 max-w-sm">
+      En créant un compte, vous acceptez nos
+      <a href="#" class="underline hover:text-gray-600">
+        Conditions d'Utilisation
+      </a>
+      et notre
+      <a href="#" class="underline hover:text-gray-600">
+        Politique de Confidentialité
+      </a>.
+    </p>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="py-6 text-center border-t border-gray-100">
+    <p class="text-xs text-gray-400">
+      © {{ annee }} ClubISJ - Institut Universitaire Saint Jean
+      de Yaoundé. Tous droits réservés.
+    </p>
+  </footer>
+
+</div>

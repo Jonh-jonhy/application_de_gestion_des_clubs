@@ -1,3 +1,41 @@
-/* You can add global styles to this file, and also import other style files */
+/* src/styles.css */
 
-@import 'tailwindcss';
+/* Import Tailwind v4 */
+@import "tailwindcss";
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+/* ── Thème personnalisé ClubISJ ──────────────────────────────────
+   Avec Tailwind v4, les couleurs custom se définissent
+   directement ici avec @theme.
+   Cela remplace l'ancien tailwind.config.js
+────────────────────────────────────────────────────────────────── */
+@theme {
+  /* Couleur principale violet ISJ */
+  --color-primary-50:  #faf5ff;
+  --color-primary-100: #f3e8ff;
+  --color-primary-200: #e9d5ff;
+  --color-primary-400: #c084fc;
+  --color-primary-500: #a855f7;
+  --color-primary-600: #9333ea;
+  --color-primary-700: #7C3AED;
+  --color-primary-800: #6d28d9;
+  --color-primary-900: #5b21b6;
+
+  /* Police Inter */
+  --font-sans: 'Inter', sans-serif;
+}
+
+/* Reset global */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #ffffff;
+  color: #111827;
+  margin: 0;
+  padding: 0;
+}

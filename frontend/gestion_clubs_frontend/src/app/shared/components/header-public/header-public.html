@@ -1,0 +1,107 @@
+<!-- src/app/shared/components/header-public/header-public.html -->
+
+<header class="w-full bg-white border-b border-gray-100 px-4 md:px-8 py-4">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+
+    <!-- Logo -->
+    <a routerLink="/" class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-primary-700 rounded-lg
+                  flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none"
+             stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <span class="text-lg font-bold text-gray-900">ClubISJ</span>
+    </a>
+
+    <!-- Navigation desktop -->
+    <nav class="hidden md:flex items-center gap-6">
+      <a href="#"
+         class="text-sm text-gray-600 hover:text-gray-900
+                transition-colors duration-200">
+        À propos
+      </a>
+      <a href="#"
+         class="text-sm text-gray-600 hover:text-gray-900
+                transition-colors duration-200">
+        Aide
+      </a>
+
+      <!-- Sélecteur langue -->
+      <div class="flex items-center gap-1 border border-gray-200
+                  rounded-full px-3 py-1.5">
+        <button class="text-sm font-semibold text-primary-700">
+          FR
+        </button>
+        <span class="text-gray-300 text-xs">|</span>
+        <button class="text-sm text-gray-400
+                       hover:text-gray-600 transition-colors">
+          EN
+        </button>
+      </div>
+
+      <!-- Bouton Se connecter -->
+      <a routerLink="/login"
+         class="bg-primary-700 hover:bg-primary-800 text-white
+                text-sm font-semibold px-5 py-2 rounded-lg
+                transition-colors duration-200">
+        Se connecter
+      </a>
+    </nav>
+
+    <!-- Menu hamburger mobile -->
+    <button class="md:hidden flex items-center justify-center
+                   w-9 h-9 rounded-lg border border-gray-200
+                   text-gray-600 hover:bg-gray-50 transition-colors"
+            (click)="toggleMenu()">
+      @if (!menuOuvert) {
+        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      } @else {
+        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      }
+    </button>
+
+  </div>
+
+  <!-- Menu mobile déroulant -->
+  @if (menuOuvert) {
+    <div class="md:hidden border-t border-gray-100 mt-4 pt-4
+                px-4 pb-4 space-y-3">
+      <a href="#"
+         class="block text-sm text-gray-600 hover:text-gray-900
+                py-2 transition-colors">
+        À propos
+      </a>
+      <a href="#"
+         class="block text-sm text-gray-600 hover:text-gray-900
+                py-2 transition-colors">
+        Aide
+      </a>
+      <div class="flex items-center gap-2 py-2">
+        <button class="text-sm font-semibold text-primary-700">
+          FR
+        </button>
+        <span class="text-gray-300">|</span>
+        <button class="text-sm text-gray-400">EN</button>
+      </div>
+      <a routerLink="/login"
+         class="block w-full text-center bg-primary-700
+                hover:bg-primary-800 text-white text-sm
+                font-semibold px-5 py-2.5 rounded-lg
+                transition-colors duration-200">
+        Se connecter
+      </a>
+    </div>
+  }
+
+</header>

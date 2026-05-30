@@ -1,0 +1,32 @@
+/* Animation */
+
+/* Badge float */
+@keyframes badge-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+    
+}
+
+.main-badge{
+    animation: badge-float 3s ease-in-out infinite;
+}
+
+/* badge-dot pulse effect */
+@keyframes pulse-ring {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    100%{
+        transform: scale(1.05);
+        box-shadow: 0 0 0 7px rgba(59,130,246,0);
+    }
+}
+
+.badge-dot{
+    animation: pulse-ring 1s ease-in-out infinite;
+}

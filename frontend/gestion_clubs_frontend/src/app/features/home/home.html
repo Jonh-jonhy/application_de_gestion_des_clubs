@@ -1,1 +1,169 @@
-<p>home works!</p>
+<!-- src/app/features/home/home.html -->
+
+<div class="min-h-screen flex flex-col bg-white">
+
+  <!-- Header factorisé -->
+  <app-header-public />
+
+  <!-- HERO SECTION -->
+  <main class="flex-1 flex flex-col items-center justify-center
+               bg-gradient-to-b from-purple-50 to-white
+               px-4 py-16 md:py-28 text-center">
+
+    <!-- Badge -->
+    <div class="inline-flex items-center gap-2 bg-white border
+                border-gray-200 rounded-full px-4 py-1.5 mb-8
+                shadow-sm main-badge">
+      <span class="w-2 h-2 rounded-full bg-primary-700 badge-dot"></span>
+      <span class="text-xs font-semibold text-gray-600
+                   tracking-widest uppercase">
+        Plateforme étudiante officielle
+      </span>
+    </div>
+
+    <!-- Titre -->
+    <h1 class="text-3xl md:text-5xl font-black text-gray-900
+               leading-tight mb-5 max-w-2xl px-4">
+      Gérez vos clubs étudiants
+      <span class="block text-primary-700 mt-1">
+        en toute simplicité.
+      </span>
+    </h1>
+
+    <!-- Sous-titre -->
+    <p class="text-sm md:text-base text-gray-500 max-w-md
+              mb-10 leading-relaxed px-4">
+      La solution centralisée pour organiser vos activités,
+      suivre vos membres et dynamiser la vie associative
+      de votre campus.
+    </p>
+
+    <!-- Boutons CTA -->
+    <div class="flex flex-col sm:flex-row items-center
+                gap-4 mb-16 px-4 w-full sm:w-auto">
+      <a routerLink="/login"
+         class="w-full sm:w-auto inline-flex items-center
+                justify-center gap-2 bg-primary-700
+                hover:bg-primary-800 text-white font-semibold
+                px-6 py-3 rounded-xl transition-colors
+                duration-200 shadow-md">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                stroke-width="2"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3
+                   0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3
+                   3 0 013 3v1"/>
+        </svg>
+        Se connecter
+      </a>
+      <a href="#"
+         class="w-full sm:w-auto inline-flex items-center
+                justify-center gap-2 bg-white border
+                border-gray-300 hover:border-gray-400
+                text-gray-700 font-semibold px-6 py-3
+                rounded-xl transition-colors duration-200">
+        En savoir plus
+      </a>
+    </div>
+
+    <!-- Séparateur -->
+    <div class="w-full max-w-sm border-t border-gray-200 mb-12">
+    </div>
+
+    <!-- Compteurs -->
+    <div class="flex items-center justify-center gap-10 md:gap-24">
+      @for (stat of stats; track stat.label) {
+        <div class="text-center">
+          <p class="text-3xl md:text-4xl font-black text-gray-900">
+            {{ stat.valeur }}
+          </p>
+          <p class="text-xs md:text-sm text-gray-500 mt-1">
+            {{ stat.label }}
+          </p>
+        </div>
+      }
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-gray-100 px-4 md:px-8 py-12">
+    <div class="max-w-6xl mx-auto">
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-6 h-6 bg-primary-700 rounded
+                        flex items-center justify-center">
+              <span class="text-xs font-bold text-white">C</span>
+            </div>
+            <span class="font-bold text-gray-900">ClubISJ</span>
+          </div>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Optimiser l'expérience associative pour chaque
+            étudiant, un club à la fois.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold text-gray-400 uppercase
+                     tracking-widest mb-4">
+            Ressources
+          </h4>
+          <ul class="space-y-3">
+            <li>
+              <a href="#" class="text-sm text-gray-600
+                                 hover:text-gray-900 transition-colors">
+                Centre d'aide
+              </a>
+            </li>
+            <li>
+              <a href="#" class="text-sm text-gray-600
+                                 hover:text-gray-900 transition-colors">
+                Guides
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold text-gray-400 uppercase
+                     tracking-widest mb-4">
+            Légal
+          </h4>
+          <ul class="space-y-3">
+            <li>
+              <a href="#" class="text-sm text-gray-600
+                                 hover:text-gray-900 transition-colors">
+                Confidentialité
+              </a>
+            </li>
+            <li>
+              <a href="#" class="text-sm text-gray-600
+                                 hover:text-gray-900 transition-colors">
+                Mentions légales
+              </a>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="border-t border-gray-100 pt-6 flex flex-col
+                  sm:flex-row items-center justify-between gap-2">
+        <p class="text-xs text-gray-400 text-center sm:text-left">
+          © {{ annee }} ClubISJ — Institut Saint Jean.
+          Tous droits réservés.
+        </p>
+        <span class="text-xs text-gray-300 bg-gray-50
+                     px-2 py-1 rounded-full">
+          v1.0.0-stable
+        </span>
+      </div>
+
+    </div>
+  </footer>
+
+</div>

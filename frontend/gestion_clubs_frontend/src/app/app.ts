@@ -1,5 +1,4 @@
-// src/app/app.ts
-//
+
 // Composant racine de l'application.
 // RouterOutlet est nécessaire pour afficher
 // les composants selon la route active.
